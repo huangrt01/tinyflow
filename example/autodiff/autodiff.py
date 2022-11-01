@@ -340,23 +340,30 @@ def gradients(output_node, node_list):
 
     """
 
+    # a map from node to a list of gradient contributions from each output node
+    node_to_output_grads_list = {}
+    # Special note on initializing gradient of output_node as
+    # oneslike_op(output_node): We are really taking a derivative of the scalar
+    # reduce_sum(output_node) instead of the vector output_node. But this is the
+    # common case for loss function.
+    node_to_output_grads_list[output_node] = [oneslike_op(output_node)]
     # a map from node to the gradient of that node
     node_to_output_grad = {}
-    # Special note on initializing gradient of output_node as oneslike_op(output_node):
-    # We are really taking a derivative of the scalar reduce_sum(output_node)
-    # instead of the vector output_node. But this is the common case for loss function.
-    node_to_output_grad[output_node] = oneslike_op(output_node)
 
     # Traverse graph in reverse topological order given the output_node that we are taking gradient wrt.
     reverse_topo_order = reversed(find_topo_sort([output_node]))
 
     for node in reverse_topo_order:
-        grad = node_to_output_grad[node]
-        inputs_grad = node.op.gradient(node, grad)
+        grads = node_to_output_grads_list[node]
+        node_to_output_grad[node] = sum_node_list(grads)
+        inputs_grad = node.op.gradient(node, node_to_output_grad[node])
         if inputs_grad is None:
             continue
         for input, input_grad in zip(node.inputs, inputs_grad):
-            node_to_output_grad[input] = node_to_output_grad.get(input, 0.0) + input_grad
+            if input in node_to_output_grads_list:
+                node_to_output_grads_list[input].append(input_grad)
+            else:
+                node_to_output_grads_list[input] = [input_grad]
 
     # Collect results for gradients requested.
     grad_node_list = [node_to_output_grad[node] for node in node_list]

@@ -1,6 +1,5 @@
 import autodiff as ad
 import numpy as np
-import pdb
 
 
 def test_identity():
