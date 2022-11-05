@@ -525,12 +525,12 @@ relu_gradient_op = ReluGradientOp()
 class Executor(object):
     """Executor computes values for given set of nodes in computation graph."""
 
-    def __init__(self, eval_node_list, ctx=None):
+    def __init__(self, eval_node_list, device=None):
         """
         Parameters
         ----------
         eval_node_list: list of nodes whose values need to be computed.
-        ctx: runtime DLContext, default is None which means np.ndarray on cpu
+        device: runtime Device, default is None which means np.ndarray on cpu
         topo_order: list of nodes in topological order
         node_to_shape_map: dict from node to shape of the node
         node_to_arr_map: dict from node to tvm.nd.array allocated for node
@@ -538,8 +538,8 @@ class Executor(object):
         feed_shapes: shapes of feed_dict from last run(...)
         """
         self.eval_node_list = eval_node_list
-        self.ctx = ctx
-        if self.ctx == tvm.cpu(0):
+        self.device = device
+        if self.device == tvm.cpu(0):
             self.tgt = "llvm"
             self.tgt_host = "llvm"
         else:
@@ -609,7 +609,7 @@ class Executor(object):
 
         node_to_val_map = {}
         for node, value in feed_dict.items():
-            assert isinstance(value, tvm.ndarray.NDArray),\
+            assert isinstance(value, tvm.nd.NDArray),\
                 "feed_dict value type not supported"
             node_to_val_map[node] = value
 

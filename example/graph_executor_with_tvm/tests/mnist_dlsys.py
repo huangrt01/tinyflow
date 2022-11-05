@@ -60,11 +60,11 @@ def convert_to_one_hot(vals):
     return one_hot_vals
 
 
-def mnist_logreg(executor_ctx, num_epochs=10, print_loss_val_each_epoch=False):
+def mnist_logreg(executor_device, num_epochs=10, print_loss_val_each_epoch=False):
     print("=== Build logistic regression model...")
 
-    # recover tgt, tgt_host info from tvm.context
-    if executor_ctx == tvm.cpu(0):
+    # recover tgt, tgt_host info from tvm.device
+    if executor_device == tvm.cpu(0):
         tgt = "llvm"
         tgt_host = "llvm"
     else:
@@ -81,7 +81,7 @@ def mnist_logreg(executor_ctx, num_epochs=10, print_loss_val_each_epoch=False):
     loss = ad.softmaxcrossentropy_op(y, y_)
 
     grad_W1, grad_b1 = ad.gradients(loss, [W1, b1])
-    executor = ad.Executor([loss, grad_W1, grad_b1, y], ctx=executor_ctx)
+    executor = ad.Executor([loss, grad_W1, grad_b1, y], device=executor_device)
 
     # Read input data
     datasets = load_mnist_data("mnist.pkl.gz")
@@ -105,12 +105,12 @@ def mnist_logreg(executor_ctx, num_epochs=10, print_loss_val_each_epoch=False):
     valid_y_val = np.empty(shape=(batch_size, 10), dtype=np.float32)
 
     # wrap them under tvm.nd.array
-    W1_val = tvm.nd.array(W1_val, ctx=executor_ctx)
-    b1_val = tvm.nd.array(b1_val, ctx=executor_ctx)
-    X_val = tvm.nd.array(X_val, ctx=executor_ctx)
-    y_val = tvm.nd.array(y_val, ctx=executor_ctx)
-    valid_X_val = tvm.nd.array(valid_X_val, ctx=executor_ctx)
-    valid_y_val = tvm.nd.array(valid_y_val, ctx=executor_ctx)
+    W1_val = tvm.nd.array(W1_val, device=executor_device)
+    b1_val = tvm.nd.array(b1_val, device=executor_device)
+    X_val = tvm.nd.array(X_val, device=executor_device)
+    y_val = tvm.nd.array(y_val, device=executor_device)
+    valid_X_val = tvm.nd.array(valid_X_val, device=executor_device)
+    valid_y_val = tvm.nd.array(valid_y_val, device=executor_device)
 
     # training loop
     lr = 1e-3
@@ -166,12 +166,12 @@ def mnist_logreg(executor_ctx, num_epochs=10, print_loss_val_each_epoch=False):
           np.mean(time_measurements))
 
 
-def mnist_mlp(executor_ctx=None, num_epochs=10,
+def mnist_mlp(executor_device=None, num_epochs=10,
               print_loss_val_each_epoch=False):
     print("=== Build 3-layer MLP model...")
 
-    # recover tgt, tgt_host info from tvm.context
-    if executor_ctx == tvm.cpu(0):
+    # recover tgt, tgt_host info from tvm.device
+    if executor_device == tvm.cpu(0):
         tgt = "llvm"
         tgt_host = "llvm"
     else:
@@ -206,7 +206,7 @@ def mnist_mlp(executor_ctx=None, num_epochs=10,
         loss, [W1, W2, W3, b1, b2, b3])
     executor = ad.Executor(
         [loss, grad_W1, grad_W2, grad_W3, grad_b1, grad_b2, grad_b3, y],
-        ctx=executor_ctx)
+        device=executor_device)
 
     # Read input data
     datasets = load_mnist_data("mnist.pkl.gz")
@@ -234,16 +234,16 @@ def mnist_mlp(executor_ctx=None, num_epochs=10,
     valid_y_val = np.empty(shape=(batch_size, 10), dtype=np.float32)
 
     # wrap with tvm.nd.array
-    W1_val = tvm.nd.array(W1_val, ctx=executor_ctx)
-    W2_val = tvm.nd.array(W2_val, ctx=executor_ctx)
-    W3_val = tvm.nd.array(W3_val, ctx=executor_ctx)
-    b1_val = tvm.nd.array(b1_val, ctx=executor_ctx)
-    b2_val = tvm.nd.array(b2_val, ctx=executor_ctx)
-    b3_val = tvm.nd.array(b3_val, ctx=executor_ctx)
-    X_val = tvm.nd.array(X_val, ctx=executor_ctx)
-    y_val = tvm.nd.array(y_val, ctx=executor_ctx)
-    valid_X_val = tvm.nd.array(valid_X_val, ctx=executor_ctx)
-    valid_y_val = tvm.nd.array(valid_y_val, ctx=executor_ctx)
+    W1_val = tvm.nd.array(W1_val, device=executor_device)
+    W2_val = tvm.nd.array(W2_val, device=executor_device)
+    W3_val = tvm.nd.array(W3_val, device=executor_device)
+    b1_val = tvm.nd.array(b1_val, device=executor_device)
+    b2_val = tvm.nd.array(b2_val, device=executor_device)
+    b3_val = tvm.nd.array(b3_val, device=executor_device)
+    X_val = tvm.nd.array(X_val, device=executor_device)
+    y_val = tvm.nd.array(y_val, device=executor_device)
+    valid_X_val = tvm.nd.array(valid_X_val, device=executor_device)
+    valid_y_val = tvm.nd.array(valid_y_val, device=executor_device)
 
     # training loop
     lr = 1.0e-3
@@ -346,7 +346,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     models = []
-    executor_ctx = None
+    executor_device = None
     print_loss_val_each_epoch = False
     if args.model == "logreg":
         models = [mnist_logreg]
@@ -363,10 +363,10 @@ if __name__ == "__main__":
         tgt_host = "llvm"
         assert False, "cuda codegen not ready"
     # create context object
-    executor_ctx = tvm.context(tgt, 0)
+    executor_device = tvm.device(tgt, 0)
 
     print_loss_val_each_epoch = True if args.print_loss_val_each_epoch \
         else False
     num_epochs = args.num_epoch
     for m in models:
-        m(executor_ctx, num_epochs, print_loss_val_each_epoch)
+        m(executor_device, num_epochs, print_loss_val_each_epoch)

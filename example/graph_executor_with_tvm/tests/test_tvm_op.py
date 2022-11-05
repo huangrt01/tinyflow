@@ -5,7 +5,7 @@ from dlsys import autodiff, tvm_op
 tgt_host = "llvm"
 tgt = "llvm"
 dtype = "float32"
-ctx = tvm.context(tgt, 0)
+device = tvm.device(tgt, 0)
 
 
 def test_matrix_elementwise_add():
@@ -13,9 +13,9 @@ def test_matrix_elementwise_add():
     x = np.random.uniform(0, 10, size=shape).astype(dtype)
     y = np.random.uniform(0, 10, size=shape).astype(dtype)
     z = np.zeros(shape).astype(dtype)
-    arr_x = tvm.nd.array(x, ctx=ctx)
-    arr_y = tvm.nd.array(y, ctx=ctx)
-    arr_z = tvm.nd.array(z, ctx=ctx)
+    arr_x = tvm.nd.array(x, device=device)
+    arr_y = tvm.nd.array(y, device=device)
+    arr_z = tvm.nd.array(z, device=device)
     elemwise_add = tvm_op.make_elemwise_add(shape, tgt, tgt_host, "elem_add")
     elemwise_add(arr_x, arr_y, arr_z)
     z = arr_z.asnumpy()
@@ -27,8 +27,8 @@ def test_matrix_elementwise_add_by_const():
     x = np.random.uniform(0, 10, size=shape).astype(dtype)
     const_val = np.random.uniform(0, 10)
     y = np.zeros(shape).astype(dtype)
-    arr_x = tvm.nd.array(x, ctx=ctx)
-    arr_y = tvm.nd.array(y, ctx=ctx)
+    arr_x = tvm.nd.array(x, device=device)
+    arr_y = tvm.nd.array(y, device=device)
     elemwise_add_by_const = tvm_op.make_elemwise_add_by_const(
         shape, const_val, tgt, tgt_host, "elem_add_by_const")
     elemwise_add_by_const(arr_x, arr_y)
@@ -41,9 +41,9 @@ def test_matrix_elementwise_mul():
     x = np.random.uniform(0, 10, size=shape).astype(dtype)
     y = np.random.uniform(0, 10, size=shape).astype(dtype)
     z = np.zeros(shape).astype(dtype)
-    arr_x = tvm.nd.array(x, ctx=ctx)
-    arr_y = tvm.nd.array(y, ctx=ctx)
-    arr_z = tvm.nd.array(z, ctx=ctx)
+    arr_x = tvm.nd.array(x, device=device)
+    arr_y = tvm.nd.array(y, device=device)
+    arr_z = tvm.nd.array(z, device=device)
     elemwise_mul = tvm_op.make_elemwise_mul(shape, tgt, tgt_host, "elem_add")
     elemwise_mul(arr_x, arr_y, arr_z)
     z = arr_z.asnumpy()
@@ -55,8 +55,8 @@ def test_matrix_elementwise_mul_by_const():
     x = np.random.uniform(0, 10, size=shape).astype(dtype)
     const_val = np.random.uniform(0, 10)
     y = np.zeros(shape).astype(dtype)
-    arr_x = tvm.nd.array(x, ctx=ctx)
-    arr_y = tvm.nd.array(y, ctx=ctx)
+    arr_x = tvm.nd.array(x, device=device)
+    arr_y = tvm.nd.array(y, device=device)
     elemwise_mul_by_const = tvm_op.make_elemwise_mul_by_const(
         shape, const_val, tgt, tgt_host, "elem_mul_by_const")
     elemwise_mul_by_const(arr_x, arr_y)
@@ -71,9 +71,9 @@ def test_matrix_multiply():
     x = np.random.uniform(0, 10, size=shapeX).astype(dtype)
     y = np.random.uniform(0, 10, size=shapeY).astype(dtype)
     z = np.zeros(shapeZ).astype(dtype)
-    arr_x = tvm.nd.array(x, ctx=ctx)
-    arr_y = tvm.nd.array(y, ctx=ctx)
-    arr_z = tvm.nd.array(z, ctx=ctx)
+    arr_x = tvm.nd.array(x, device=device)
+    arr_y = tvm.nd.array(y, device=device)
+    arr_z = tvm.nd.array(z, device=device)
 
     matrix_mul = tvm_op.make_matrix_mul(
         shapeX, False, shapeY, False, tgt, tgt_host, "matrix_mul")
@@ -87,9 +87,9 @@ def test_matrix_multiply():
     x = np.random.uniform(0, 10, size=shapeX).astype(dtype)
     y = np.random.uniform(0, 10, size=shapeY).astype(dtype)
     z = np.zeros(shapeZ).astype(dtype)
-    arr_x = tvm.nd.array(x, ctx=ctx)
-    arr_y = tvm.nd.array(y, ctx=ctx)
-    arr_z = tvm.nd.array(z, ctx=ctx)
+    arr_x = tvm.nd.array(x, device=device)
+    arr_y = tvm.nd.array(y, device=device)
+    arr_z = tvm.nd.array(z, device=device)
 
     matrix_mul = tvm_op.make_matrix_mul(
         shapeX, False, shapeY, True, tgt, tgt_host, "matrix_mul")
@@ -103,9 +103,9 @@ def test_matrix_multiply():
     x = np.random.uniform(0, 10, size=shapeX).astype(dtype)
     y = np.random.uniform(0, 10, size=shapeY).astype(dtype)
     z = np.zeros(shapeZ).astype(dtype)
-    arr_x = tvm.nd.array(x, ctx=ctx)
-    arr_y = tvm.nd.array(y, ctx=ctx)
-    arr_z = tvm.nd.array(z, ctx=ctx)
+    arr_x = tvm.nd.array(x, device=device)
+    arr_y = tvm.nd.array(y, device=device)
+    arr_z = tvm.nd.array(z, device=device)
 
     matrix_mul = tvm_op.make_matrix_mul(
         shapeX, True, shapeY, False, tgt, tgt_host, "matrix_mul")
@@ -119,9 +119,9 @@ def test_matrix_multiply():
     x = np.random.uniform(0, 10, size=shapeX).astype(dtype)
     y = np.random.uniform(0, 10, size=shapeY).astype(dtype)
     z = np.zeros(shapeZ).astype(dtype)
-    arr_x = tvm.nd.array(x, ctx=ctx)
-    arr_y = tvm.nd.array(y, ctx=ctx)
-    arr_z = tvm.nd.array(z, ctx=ctx)
+    arr_x = tvm.nd.array(x, device=device)
+    arr_y = tvm.nd.array(y, device=device)
+    arr_z = tvm.nd.array(z, device=device)
 
     matrix_mul = tvm_op.make_matrix_mul(
         shapeX, True, shapeY, True, tgt, tgt_host, "matrix_mul")
@@ -182,9 +182,9 @@ def test_conv2d():
     x = np.random.uniform(0, 10, size=shapeX).astype(dtype)
     f = np.random.uniform(0, 10, size=shapeF).astype(dtype)
     y = np.zeros(shapeY).astype(dtype)
-    arr_x = tvm.nd.array(x, ctx=ctx)
-    arr_f = tvm.nd.array(f, ctx=ctx)
-    arr_y = tvm.nd.array(y, ctx=ctx)
+    arr_x = tvm.nd.array(x, device=device)
+    arr_f = tvm.nd.array(f, device=device)
+    arr_y = tvm.nd.array(y, device=device)
 
     conv2d = tvm_op.make_conv2d(shapeX, shapeF, tgt, tgt_host, "conv2d")
     conv2d(arr_x, arr_f, arr_y)
@@ -196,8 +196,8 @@ def test_relu():
     shape = (2000, 2500)
     x = np.random.uniform(-1, 1, shape).astype(dtype)
     y = np.zeros(shape).astype(dtype)
-    arr_x = tvm.nd.array(x, ctx=ctx)
-    arr_y = tvm.nd.array(y, ctx=ctx)
+    arr_x = tvm.nd.array(x, device=device)
+    arr_y = tvm.nd.array(y, device=device)
     relu = tvm_op.make_relu(shape, tgt, tgt_host, "relu")
     relu(arr_x, arr_y)
     y = arr_y.asnumpy()
@@ -209,9 +209,9 @@ def test_relu_gradient():
     x = np.random.uniform(-1, 1, shape).astype(dtype)
     grad_x = np.random.uniform(-5, 5, shape).astype(dtype)
     y = np.zeros(shape).astype(dtype)
-    arr_x = tvm.nd.array(x, ctx=ctx)
-    arr_grad_x = tvm.nd.array(grad_x, ctx=ctx)
-    arr_y = tvm.nd.array(y, ctx=ctx)
+    arr_x = tvm.nd.array(x, device=device)
+    arr_grad_x = tvm.nd.array(grad_x, device=device)
+    arr_y = tvm.nd.array(y, device=device)
     relu_gradient = tvm_op.make_relu_gradient(
         shape, tgt, tgt_host, "relu_gradient")
     relu_gradient(arr_x, arr_grad_x, arr_y)
@@ -223,8 +223,8 @@ def test_softmax():
     shape = (400, 1000)
     x = np.random.uniform(-5, 5, shape).astype(dtype)
     y = np.zeros(shape).astype(dtype)
-    arr_x = tvm.nd.array(x, ctx=ctx)
-    arr_y = tvm.nd.array(y, ctx=ctx)
+    arr_x = tvm.nd.array(x, device=device)
+    arr_y = tvm.nd.array(y, device=device)
     matrix_softmax = tvm_op.make_matrix_softmax(
         shape, tgt, tgt_host, "matrix_softmax")
     matrix_softmax(arr_x, arr_y)
@@ -237,9 +237,9 @@ def test_softmax_cross_entropy():
     y = np.random.uniform(-5, 5, shape).astype(dtype)
     y_ = np.random.uniform(-5, 5, shape).astype(dtype)
     out = np.zeros((1,)).astype(dtype)
-    arr_y = tvm.nd.array(y, ctx=ctx)
-    arr_y_ = tvm.nd.array(y_, ctx=ctx)
-    arr_out = tvm.nd.array(out, ctx=ctx)
+    arr_y = tvm.nd.array(y, device=device)
+    arr_y_ = tvm.nd.array(y_, device=device)
+    arr_out = tvm.nd.array(out, device=device)
     matrix_softmax_cross_entropy = tvm_op.make_matrix_softmax_cross_entropy(
         shape, tgt, tgt_host, "softmax_cross_entropy")
     matrix_softmax_cross_entropy(arr_y, arr_y_, arr_out)
@@ -255,8 +255,8 @@ def test_reduce_sum_axis_zero():
     to_shape = (200, 100)
     x = np.random.uniform(-5, 5, shape).astype(dtype)
     y = np.zeros(to_shape).astype(dtype)
-    arr_x = tvm.nd.array(x, ctx=ctx)
-    arr_y = tvm.nd.array(y, ctx=ctx)
+    arr_x = tvm.nd.array(x, device=device)
+    arr_y = tvm.nd.array(y, device=device)
 
     reduce_sum_axis_zero = tvm_op.make_reduce_sum_axis_zero(
         shape, tgt, tgt_host, "reduce_sum_axis_zero")
@@ -271,8 +271,8 @@ def test_broadcast_to():
     to_shape = (130, 200, 300)
     x = np.random.uniform(-1, 1, shape).astype(dtype)
     y = np.zeros(to_shape).astype(dtype)
-    arr_x = tvm.nd.array(x, ctx=ctx)
-    arr_y = tvm.nd.array(y, ctx=ctx)
+    arr_x = tvm.nd.array(x, device=device)
+    arr_y = tvm.nd.array(y, device=device)
     broadcast_to = tvm_op.make_broadcast_to(
         shape, to_shape, tgt, tgt_host, "broadcast_to")
     broadcast_to(arr_x, arr_y)

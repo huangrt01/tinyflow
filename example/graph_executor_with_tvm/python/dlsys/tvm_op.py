@@ -2,7 +2,7 @@ from __future__ import absolute_import, print_function
 
 import tvm
 import numpy as np
-import topi
+from tvm import topi
 
 # Global declarations of environment.
 
@@ -10,16 +10,16 @@ import topi
 tgt_host = "llvm"
 # llvm, cuda, opencl, metal
 # Change it to respective GPU if gpu is enabled Ex: cuda, opencl
-tgt = "llvm"
+tgt = tvm.target.Target("llvm", host=tgt_host)
 
 
 def make_elemwise_add(shape, tgt, tgt_host, func_name, dtype="float32"):
-    A = tvm.placeholder(shape, dtype=dtype, name="A")
-    B = tvm.placeholder(shape, dtype=dtype, name="B")
-    C = tvm.compute(A.shape, lambda *i: A(*i) + B(*i))
+    A = tvm.te.placeholder(shape, dtype=dtype, name="A")
+    B = tvm.te.placeholder(shape, dtype=dtype, name="B")
+    C = tvm.te.compute(A.shape, lambda *i: A(*i) + B(*i))
 
-    s = tvm.create_schedule(C.op)
-    f = tvm.build(s, [A, B, C], tgt, target_host=tgt_host, name=func_name)
+    s = tvm.te.create_schedule(C.op)
+    f = tvm.build(s, [A, B, C], tgt, name=func_name)
     return f
 
 
@@ -84,30 +84,30 @@ def make_matrix_softmax_cross_entropy(shape, tgt, tgt_host, func_name,
 
 
 def make_reduce_sum_axis_zero(shape, tgt, tgt_host, func_name, dtype="float32"):
-    A = tvm.placeholder(shape, dtype=dtype, name="A")
+    A = tvm.te.placeholder(shape, dtype=dtype, name="A")
     C = topi.sum(A, axis=0, keepdims=False)
 
-    s = tvm.create_schedule(C.op)
-    f = tvm.build(s, [A, C], tgt, target_host=tgt_host, name=func_name)
+    s = tvm.te.create_schedule(C.op)
+    f = tvm.build(s, [A, C], tgt, name=func_name)
     return f
 
 
 def make_broadcast_to(shape, to_shape, tgt, tgt_host, func_name,
                       dtype="float32"):
-    A = tvm.placeholder(shape, dtype=dtype, name="A")
+    A = tvm.te.placeholder(shape, dtype=dtype, name="A")
     C = topi.broadcast_to(A, to_shape)
 
-    s = tvm.create_schedule(C.op)
-    f = tvm.build(s, [A, C], tgt, target_host=tgt_host, name=func_name)
+    s = tvm.te.create_schedule(C.op)
+    f = tvm.build(s, [A, C], tgt, name=func_name)
     return f
 
 
 def make_sgd_update(shape, learning_rate, tgt, tgt_host, func_name,
                     dtype="float32"):
-    X = tvm.placeholder(shape, dtype=dtype, name="A")
-    grad = tvm.placeholder(shape, dtype=dtype, name="grad")
-    Y = tvm.compute(shape, lambda *i: X(*i) - learning_rate * grad(*i))
+    X = tvm.te.placeholder(shape, dtype=dtype, name="A")
+    grad = tvm.te.placeholder(shape, dtype=dtype, name="grad")
+    Y = tvm.te.compute(shape, lambda *i: X(*i) - learning_rate * grad(*i))
 
-    s = tvm.create_schedule(Y.op)
-    f = tvm.build(s, [X, grad, Y], tgt, target_host=tgt_host, name=func_name)
+    s = tvm.te.create_schedule(Y.op)
+    f = tvm.build(s, [X, grad, Y], tgt, name=func_name)
     return f
