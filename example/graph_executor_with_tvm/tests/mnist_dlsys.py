@@ -63,10 +63,9 @@ def convert_to_one_hot(vals):
 def mnist_logreg(executor_device, num_epochs=10, print_loss_val_each_epoch=False):
     print("=== Build logistic regression model...")
 
-    # recover tgt, tgt_host info from tvm.device
+    # recover tgt info from tvm.device
     if executor_device == tvm.cpu(0):
         tgt = "llvm"
-        tgt_host = "llvm"
     else:
         assert False, "non-CPU context not yet supported"
 
@@ -116,9 +115,9 @@ def mnist_logreg(executor_device, num_epochs=10, print_loss_val_each_epoch=False
     lr = 1e-3
     # JIT compile sgd update ops
     W1_sgd_update_func = tvm_op.make_sgd_update(
-        W1_val.shape, lr, tgt, tgt_host, "W1_sgd_update")
+        W1_val.shape, lr, tgt, "W1_sgd_update")
     b1_sgd_update_func = tvm_op.make_sgd_update(
-        b1_val.shape, lr, tgt, tgt_host, "b1_sgd_update")
+        b1_val.shape, lr, tgt, "b1_sgd_update")
     time_measurements = []
     for i in range(num_epochs):
         print("epoch %d" % i)
@@ -170,10 +169,9 @@ def mnist_mlp(executor_device=None, num_epochs=10,
               print_loss_val_each_epoch=False):
     print("=== Build 3-layer MLP model...")
 
-    # recover tgt, tgt_host info from tvm.device
+    # recover tgt info from tvm.device
     if executor_device == tvm.cpu(0):
         tgt = "llvm"
-        tgt_host = "llvm"
     else:
         assert False, "non-CPU context not yet supported"
 
@@ -249,17 +247,17 @@ def mnist_mlp(executor_device=None, num_epochs=10,
     lr = 1.0e-3
     # JIT compile sgd update ops
     W1_sgd_update_func = tvm_op.make_sgd_update(
-        W1_val.shape, lr, tgt, tgt_host, "W1_sgd_update")
+        W1_val.shape, lr, tgt, "W1_sgd_update")
     W2_sgd_update_func = tvm_op.make_sgd_update(
-        W2_val.shape, lr, tgt, tgt_host, "W2_sgd_update")
+        W2_val.shape, lr, tgt, "W2_sgd_update")
     W3_sgd_update_func = tvm_op.make_sgd_update(
-        W3_val.shape, lr, tgt, tgt_host, "W3_sgd_update")
+        W3_val.shape, lr, tgt, "W3_sgd_update")
     b1_sgd_update_func = tvm_op.make_sgd_update(
-        b1_val.shape, lr, tgt, tgt_host, "b1_sgd_update")
+        b1_val.shape, lr, tgt, "b1_sgd_update")
     b2_sgd_update_func = tvm_op.make_sgd_update(
-        b2_val.shape, lr, tgt, tgt_host, "b2_sgd_update")
+        b2_val.shape, lr, tgt, "b2_sgd_update")
     b3_sgd_update_func = tvm_op.make_sgd_update(
-        b3_val.shape, lr, tgt, tgt_host, "b3_sgd_update")
+        b3_val.shape, lr, tgt, "b3_sgd_update")
     time_measurements = []
     for i in range(num_epochs):
         print("epoch %d" % i)
@@ -357,10 +355,8 @@ if __name__ == "__main__":
 
     if args.executor_context == "cpu":
         tgt = "llvm"
-        tgt_host = "llvm"
     elif args.executor_context == "gpu":
         tgt = "cuda"
-        tgt_host = "llvm"
         assert False, "cuda codegen not ready"
     # create context object
     executor_device = tvm.device(tgt, 0)

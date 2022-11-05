@@ -1,8 +1,10 @@
+from __future__ import division
+
 import numpy as np
 import tvm
 from dlsys import autodiff, tvm_op
 
-tgt_host = "llvm"
+# llvm
 tgt = "llvm"
 dtype = "float32"
 device = tvm.device(tgt, 0)
@@ -16,7 +18,7 @@ def test_matrix_elementwise_add():
     arr_x = tvm.nd.array(x, device=device)
     arr_y = tvm.nd.array(y, device=device)
     arr_z = tvm.nd.array(z, device=device)
-    elemwise_add = tvm_op.make_elemwise_add(shape, tgt, tgt_host, "elem_add")
+    elemwise_add = tvm_op.make_elemwise_add(shape, tgt, "elem_add")
     elemwise_add(arr_x, arr_y, arr_z)
     z = arr_z.asnumpy()
     np.testing.assert_allclose(x + y, z, rtol=1e-5)
@@ -30,7 +32,7 @@ def test_matrix_elementwise_add_by_const():
     arr_x = tvm.nd.array(x, device=device)
     arr_y = tvm.nd.array(y, device=device)
     elemwise_add_by_const = tvm_op.make_elemwise_add_by_const(
-        shape, const_val, tgt, tgt_host, "elem_add_by_const")
+        shape, const_val, tgt, "elem_add_by_const")
     elemwise_add_by_const(arr_x, arr_y)
     y = arr_y.asnumpy()
     np.testing.assert_allclose(x + const_val, y, rtol=1e-5)
@@ -44,7 +46,7 @@ def test_matrix_elementwise_mul():
     arr_x = tvm.nd.array(x, device=device)
     arr_y = tvm.nd.array(y, device=device)
     arr_z = tvm.nd.array(z, device=device)
-    elemwise_mul = tvm_op.make_elemwise_mul(shape, tgt, tgt_host, "elem_add")
+    elemwise_mul = tvm_op.make_elemwise_mul(shape, tgt, "elem_mul")
     elemwise_mul(arr_x, arr_y, arr_z)
     z = arr_z.asnumpy()
     np.testing.assert_allclose(x * y, z, rtol=1e-5)
@@ -58,7 +60,7 @@ def test_matrix_elementwise_mul_by_const():
     arr_x = tvm.nd.array(x, device=device)
     arr_y = tvm.nd.array(y, device=device)
     elemwise_mul_by_const = tvm_op.make_elemwise_mul_by_const(
-        shape, const_val, tgt, tgt_host, "elem_mul_by_const")
+        shape, const_val, tgt, "elem_mul_by_const")
     elemwise_mul_by_const(arr_x, arr_y)
     y = arr_y.asnumpy()
     np.testing.assert_allclose(x * const_val, y, rtol=1e-5)
@@ -76,7 +78,7 @@ def test_matrix_multiply():
     arr_z = tvm.nd.array(z, device=device)
 
     matrix_mul = tvm_op.make_matrix_mul(
-        shapeX, False, shapeY, False, tgt, tgt_host, "matrix_mul")
+        shapeX, False, shapeY, False, tgt, "matrix_mul")
     matrix_mul(arr_x, arr_y, arr_z)
     z = arr_z.asnumpy()
     np.testing.assert_allclose(np.dot(x, y), z, rtol=1e-5)
@@ -92,7 +94,7 @@ def test_matrix_multiply():
     arr_z = tvm.nd.array(z, device=device)
 
     matrix_mul = tvm_op.make_matrix_mul(
-        shapeX, False, shapeY, True, tgt, tgt_host, "matrix_mul")
+        shapeX, False, shapeY, True, tgt, "matrix_mul")
     matrix_mul(arr_x, arr_y, arr_z)
     z = arr_z.asnumpy()
     np.testing.assert_allclose(np.dot(x, np.transpose(y)), z, rtol=1e-5)
@@ -108,7 +110,7 @@ def test_matrix_multiply():
     arr_z = tvm.nd.array(z, device=device)
 
     matrix_mul = tvm_op.make_matrix_mul(
-        shapeX, True, shapeY, False, tgt, tgt_host, "matrix_mul")
+        shapeX, True, shapeY, False, tgt, "matrix_mul")
     matrix_mul(arr_x, arr_y, arr_z)
     z = arr_z.asnumpy()
     np.testing.assert_allclose(np.dot(np.transpose(x), y), z, rtol=1e-5)
@@ -124,7 +126,7 @@ def test_matrix_multiply():
     arr_z = tvm.nd.array(z, device=device)
 
     matrix_mul = tvm_op.make_matrix_mul(
-        shapeX, True, shapeY, True, tgt, tgt_host, "matrix_mul")
+        shapeX, True, shapeY, True, tgt, "matrix_mul")
     matrix_mul(arr_x, arr_y, arr_z)
     z = arr_z.asnumpy()
     np.testing.assert_allclose(
@@ -137,8 +139,8 @@ def test_conv2d():
         N, C, H, W = X.shape
         assert (H + 2 * padding - filter_H) % stride == 0
         assert (W + 2 * padding - filter_W) % stride == 0
-        out_H = (H + 2 * padding - filter_H) / stride + 1
-        out_W = (W + 2 * padding - filter_W) / stride + 1
+        out_H = (H + 2 * padding - filter_H) // stride + 1
+        out_W = (W + 2 * padding - filter_W) // stride + 1
 
         y_row_size = C * filter_H * filter_W
         y_col_size = out_H * out_W
@@ -147,7 +149,7 @@ def test_conv2d():
 
         for batch_index in range(N):
             for col_index in range(y_col_size):
-                out_y = col_index / out_W
+                out_y = col_index // out_W
                 out_x = col_index % out_W
                 in_y = out_y * stride - padding
                 in_x = out_x * stride - padding
@@ -169,8 +171,8 @@ def test_conv2d():
         N, C, H, W = X.shape
         assert (H + 2 * padding - filter_H) % stride == 0
         assert (W + 2 * padding - filter_W) % stride == 0
-        out_H = (H + 2 * padding - filter_H) / stride + 1
-        out_W = (W + 2 * padding - filter_W) / stride + 1
+        out_H = (H + 2 * padding - filter_H) // stride + 1
+        out_W = (W + 2 * padding - filter_W) // stride + 1
 
         im2col_matrix = im2col(X, filter_H, filter_W, padding, stride)
         filter_matrix = Filter.reshape(filter_outChannel, -1)
@@ -186,7 +188,7 @@ def test_conv2d():
     arr_f = tvm.nd.array(f, device=device)
     arr_y = tvm.nd.array(y, device=device)
 
-    conv2d = tvm_op.make_conv2d(shapeX, shapeF, tgt, tgt_host, "conv2d")
+    conv2d = tvm_op.make_conv2d(shapeX, shapeF, tgt, "conv2d")
     conv2d(arr_x, arr_f, arr_y)
     y = arr_y.asnumpy()
     np.testing.assert_allclose(np_conv2d(x, f), y, rtol=1e-5)
@@ -198,7 +200,7 @@ def test_relu():
     y = np.zeros(shape).astype(dtype)
     arr_x = tvm.nd.array(x, device=device)
     arr_y = tvm.nd.array(y, device=device)
-    relu = tvm_op.make_relu(shape, tgt, tgt_host, "relu")
+    relu = tvm_op.make_relu(shape, tgt, "relu")
     relu(arr_x, arr_y)
     y = arr_y.asnumpy()
     np.testing.assert_allclose(np.maximum(x, 0).astype(dtype), y)
@@ -213,7 +215,7 @@ def test_relu_gradient():
     arr_grad_x = tvm.nd.array(grad_x, device=device)
     arr_y = tvm.nd.array(y, device=device)
     relu_gradient = tvm_op.make_relu_gradient(
-        shape, tgt, tgt_host, "relu_gradient")
+        shape, tgt, "relu_gradient")
     relu_gradient(arr_x, arr_grad_x, arr_y)
     y = arr_y.asnumpy()
     np.testing.assert_allclose(((x > 0) * grad_x).astype(dtype), y)
@@ -226,7 +228,7 @@ def test_softmax():
     arr_x = tvm.nd.array(x, device=device)
     arr_y = tvm.nd.array(y, device=device)
     matrix_softmax = tvm_op.make_matrix_softmax(
-        shape, tgt, tgt_host, "matrix_softmax")
+        shape, tgt, "matrix_softmax")
     matrix_softmax(arr_x, arr_y)
     y = arr_y.asnumpy()
     np.testing.assert_allclose(autodiff.softmax_func(x), y, rtol=1e-5)
@@ -241,13 +243,13 @@ def test_softmax_cross_entropy():
     arr_y_ = tvm.nd.array(y_, device=device)
     arr_out = tvm.nd.array(out, device=device)
     matrix_softmax_cross_entropy = tvm_op.make_matrix_softmax_cross_entropy(
-        shape, tgt, tgt_host, "softmax_cross_entropy")
+        shape, tgt, "softmax_cross_entropy")
     matrix_softmax_cross_entropy(arr_y, arr_y_, arr_out)
     out = arr_out.asnumpy()
     # numpy calculation
     cross_entropy = np.mean(
         -np.sum(y_ * np.log(autodiff.softmax_func(y)), axis=1), keepdims=True)
-    np.testing.assert_allclose(cross_entropy, out, rtol=1e-5)
+    np.testing.assert_allclose(cross_entropy, out, rtol=1e-4)
 
 
 def test_reduce_sum_axis_zero():
@@ -259,7 +261,7 @@ def test_reduce_sum_axis_zero():
     arr_y = tvm.nd.array(y, device=device)
 
     reduce_sum_axis_zero = tvm_op.make_reduce_sum_axis_zero(
-        shape, tgt, tgt_host, "reduce_sum_axis_zero")
+        shape, tgt, "reduce_sum_axis_zero")
     reduce_sum_axis_zero(arr_x, arr_y)
 
     y = arr_y.asnumpy()
@@ -274,7 +276,7 @@ def test_broadcast_to():
     arr_x = tvm.nd.array(x, device=device)
     arr_y = tvm.nd.array(y, device=device)
     broadcast_to = tvm_op.make_broadcast_to(
-        shape, to_shape, tgt, tgt_host, "broadcast_to")
+        shape, to_shape, tgt, "broadcast_to")
     broadcast_to(arr_x, arr_y)
     y = arr_y.asnumpy()
     np.testing.assert_allclose(np.broadcast_to(x, to_shape), y)

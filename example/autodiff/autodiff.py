@@ -220,8 +220,35 @@ class MatMulOp(Op):
 
         Useful formula: if Y=AB, then dA=dY B^T, dB=A^T dY
         """
-        return [matmul_op(output_grad, node.inputs[1], False, True),
-                matmul_op(node.inputs[0], output_grad, True, False)]
+        if ((node.matmul_attr_trans_A is False) and
+                (node.matmul_attr_trans_B is False)):
+            # if Y=AB, then dA=dY B^T, dB=A^T dY
+            lhs_grad = matmul_op(
+                output_grad, node.inputs[1], trans_A=False, trans_B=True)
+            rhs_grad = matmul_op(
+                node.inputs[0], output_grad, trans_A=True, trans_B=False)
+        elif ((node.matmul_attr_trans_A is True) and
+                (node.matmul_attr_trans_B is False)):
+            # if Y=A^T B, then dA=(dY B^T)^T=B dY^T, dB=A^T dY
+            lhs_grad = matmul_op(
+                node.inputs[1], output_grad, trans_A=False, trans_B=True)
+            rhs_grad = matmul_op(
+                node.inputs[0], output_grad, trans_A=True, trans_B=False)
+        elif ((node.matmul_attr_trans_A is False) and
+                (node.matmul_attr_trans_B is True)):
+            # if Y=A B^T, then dA=dY B^T, dB=(A^T dY)^T=dY^T A
+            lhs_grad = matmul_op(
+                output_grad, node.inputs[1], trans_A=False, trans_B=True)
+            rhs_grad = matmul_op(
+                output_grad, node.inputs[0], trans_A=True, trans_B=False)
+        elif ((node.matmul_attr_trans_A is True) and
+                (node.matmul_attr_trans_B is True)):
+            # if Y=A^T B^T, then dA=(dY B^T)^T=B dY^T, dB=(A^T dY)^T=dY^T A
+            lhs_grad = matmul_op(
+                node.inputs[1], output_grad, trans_A=False, trans_B=True)
+            rhs_grad = matmul_op(
+                output_grad, node.inputs[0], trans_A=True, trans_B=False)
+        return [lhs_grad, rhs_grad]
 
 
 class PlaceholderOp(Op):
