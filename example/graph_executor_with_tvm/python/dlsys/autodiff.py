@@ -1,9 +1,12 @@
 """A library to take autodiff and execute a computation graph """
 from __future__ import absolute_import
 
+import copy
 import numpy as np
 import tvm
 from . import tvm_op
+
+import pdb
 
 
 class Node(object):
@@ -586,6 +589,10 @@ class Executor(object):
             assert isinstance(inferred_shapes, tuple)
             self.node_to_shape_map[node] = inferred_shapes
 
+# memory use when executing dlsys-MLP training
+# base: 394MB
+#
+
     def memory_plan(self, feed_shapes):
         """Allocates tvm.nd.array for every node except feed_dict nodes.
 
@@ -600,10 +607,13 @@ class Executor(object):
         feed_shapes: node->shapes mapping for feed_dict nodes.
         """
         self.node_to_arr_map = {}
-        for node, shape in self.node_to_shape_map.items():
-            x = np.zeros(shape).astype("float32")
-            arr_x = tvm.nd.array(x, device=self.device)
-            self.node_to_arr_map[node] = arr_x
+
+    def get_node_arr(self, node):
+        shape = self.node_to_shape_map[node]
+        x = np.zeros(shape).astype("float32")
+        arr_x = tvm.nd.array(x, device=self.device)
+        self.node_to_arr_map[node] = arr_x
+        return arr_x
 
     def compile_funcs(self, feed_shapes):
         """Compile tvm ops to native code.
@@ -617,7 +627,8 @@ class Executor(object):
         """
         self.node_to_compiled_func = {}
         for node in self.topo_order:
-            input_shapes = [self.node_to_shape_map[input] for input in node.inputs]
+            input_shapes = [self.node_to_shape_map[input]
+                            for input in node.inputs]
             self.node_to_compiled_func[node] = node.op.compiled_func(
                 node, input_shapes, self.tgt)
 
@@ -657,17 +668,36 @@ class Executor(object):
             self.memory_plan(feed_shapes)
             self.compile_funcs(feed_shapes)
 
+        # deepcopy需要给Node甚至Op定义__deepcopy__方法，难搞
+        # node_to_outputs_map = copy.deepcopy(self.node_to_outputs_map)
+        node_to_outputs_map = {}
+        for node in self.topo_order:
+            for input in node.inputs:
+                if input not in node_to_outputs_map:
+                    node_to_outputs_map[input] = set()
+                node_to_outputs_map[input].add(node)
+
         # Traverse graph in topo order and compute values for all nodes.
         for node in self.topo_order:
             if node in node_to_val_map:
                 # Skip placeholder nodes. Values already provided by feed_dict.
                 continue
             input_vals = [node_to_val_map[n] for n in node.inputs]
-            node_val = self.node_to_arr_map[node]
+            node_val = self.get_node_arr(node)
             # node_val is modified in-place
             node.op.compute(
                 node, input_vals, node_val, self.node_to_compiled_func[node])
             node_to_val_map[node] = node_val
+
+            for input in node.inputs:
+                if input in feed_dict:
+                    continue
+                input_deps = node_to_outputs_map[input]
+                input_deps.remove(node)
+                if not input_deps:
+                    del node_to_outputs_map[input]
+                    del self.node_to_arr_map[input]
+
         # Collect node values.
         if convert_to_numpy_ret_vals:
             return [node_to_val_map[n].asnumpy() for n in self.eval_node_list]
