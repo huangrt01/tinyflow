@@ -74,9 +74,34 @@ def make_relu_gradient(shape, tgt, func_name, dtype="float32"):
     f = tvm.build(s, [A, B, C], tgt, name=func_name)
     return f
 
+# logreg: Validation set accuracy = 0.922300
+#    MLP: Validation set accuracy = 0.971700
+
 # 优化前：
-# logreg: Validation set accuracy = 0.922300 Average Time per Training Epoch = 1.153565 s
-#    MLP: Validation set accuracy = 0.971700 Average Time per Training Epoch = 42.437669 s
+# logreg: Average Time per Training Epoch = 1.15 s
+#    MLP: Average Time per Training Epoch = 42.44 s
+
+# https://tvm.apache.org/docs/tutorial/tensor_expr_get_started.html#
+
+# + blocking by loop tiling + Hoist reduction domain outside the blocking loop
+# logreg: Average Time per Training Epoch = 0.29 s
+#    MLP: Average Time per Training Epoch = 9.47 s
+
+# + vectorization
+# logreg: Average Time per Training Epoch = 0.30 s
+#    MLP: Average Time per Training Epoch = 8.32 s
+
+# + Loop Permutation
+# logreg: Average Time per Training Epoch = 0.23 s
+#    MLP: Average Time per Training Epoch = 7.00 s
+
+# + Optimizing Block Writing Through Caching
+# logreg: Average Time per Training Epoch = 0.20 s
+#    MLP: Average Time per Training Epoch = 5.74 s
+
+# + Parallel
+# logreg: Average Time per Training Epoch = 0.22 s
+#    MLP: Average Time per Training Epoch = 5.74 s
 
 
 def make_matrix_mul(shapeA, transposeA, shapeB, transposeB, tgt,
@@ -108,6 +133,39 @@ def make_matrix_mul(shapeA, transposeA, shapeB, transposeB, tgt,
         C = tvm.te.compute(out_shape, lambda i,
                            j: tvm.te.sum(A[i, k] * B[j, k], axis=k))
     s = tvm.te.create_schedule(C.op)
+
+    bn = 32
+
+    # Allocate write cache, 要紧跟在create_schedule后面
+    CC = s.cache_write(C, "global")
+
+    # Blocking by loop tiling
+    xo, yo, xi, yi = s[C].tile(C.op.axis[0], C.op.axis[1], bn, bn)
+
+    # Apply the vectorization optimization
+    s[C].vectorize(yi)
+
+    # Hoist reduction domain outside the blocking loop
+    # s[C].reorder(xo, yo, ko, ki, xi, yi)
+
+    # Make Iterations Row-friendly
+    # s[C].reorder(xo, yo, ko, xi, ki, yi)
+
+    # Write cache is computed at yo
+    s[CC].compute_at(s[C], yo)
+
+    # New inner axes
+    xc, yc = s[CC].op.axis
+
+    (k,) = s[CC].op.reduce_axis
+    ko, ki = s[CC].split(k, factor=4)
+    s[CC].reorder(ko, xc, ki, yc)
+    s[CC].unroll(ki)
+    s[CC].vectorize(yc)
+
+    # parallel
+    s[C].parallel(xo)
+
     f = tvm.build(s, [A, B, C], tgt, name=func_name)
     return f
 
